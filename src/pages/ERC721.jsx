@@ -25,7 +25,7 @@ export default function ERC721() {
   // // State
   // const [users, setUsers] = useState([]);
   // const [currentUser, setCurrentUser] = useState(null);
-  const [contractBal, setContractBal] = useState(null);
+  // const [contractBal, setContractBal] = useState(null);
 
   // // TX hashes
   // const [registerHash, setRegisterHash] = useState("");
@@ -79,22 +79,83 @@ export default function ERC721() {
     }
   };
 
-  const handleSubmit = (e) => {
+
+  const uploadToIPFS = async file => {
+    if(file) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await axios({
+          method: 'POST',
+          url: 'https://api.pinata.cloud/pinning/pinFileToIPFS',
+          data: formData,
+          headers:{
+            pinata_api_key: 'febc8bcc2e0247748719',
+            pinata_scret_api_key: '0b23f6b60caf043d5718d773b8c4d877048a5f63966e1c4399e5d2bc733fd0d3',
+            'Content-Type': 'multipart/form-data',
+          },
+
+        })
+
+        console.log("Image uploaded to Pinata:" ,response.data.IpfsHash);
+        const CID = response.data.IpfsHash;
+        // const ImgHash = `https://gateway.pinata.cloud/ipfs/${CID}`;
+        // console.log(ImgHash);
+        return CID
+
+      } catch (error) {
+        alert("uploadToIpfs failed");
+      }
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // if(!contract) return alert("Contract not Connected");
+    if(!contract) return alert("Contract not Connected");
     if (!nftName || !description || !image) {
       alert("Please fill all fields");
       return;
     }
 
-    console.log({
-      nftName,
-      description,
-      image,
-    });
 
-    alert("NFT data ready (check console)");
+    const CID = await uploadToIPFS(image);
+    console.log("Image URL : ", CID);
+    if(!CID) return alert("image upload failed.");
+
+    const metadataCID = await pinJSONToIPFS(nftName,description,CID);
+    const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
+
+    console.log("metadata URL: ", metadataUrl);
+
+   
   };
+
+
+  const pinJSONToIPFS = async (nftName,description,CID) => {
+    try {
+      const data = JSON.stringify({
+        nftName,
+        description,
+        image: `ipfs://${CID}`,
+      })
+
+      const res = await fetch('https://pinata.cloud/pinning/pinJSONToIPFS',{
+        method: 'POST',
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIxZjRkOGQ5OC00YzMwLTRhNmEtYmExNC0zNzcyMTZkZTJhYjAiLCJlbWFpbCI6ImZhbnViYWx0aTc4NkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiZmViYzhiY2MyZTAyNDc3NDg3MTkiLCJzY29wZWRLZXlTZWNyZXQiOiIwYjIzZjZiNjBjYWYwNDNkNTcxOGQ3NzNiOGM0ZDg3NzA0OGE1ZjYzOTY2ZTFjNDM5OWU1ZDJiYzczM2ZkMGQzIiwiZXhwIjoxNzk5NzUwOTA1fQ.4kzAsIDdbHUfxViazyj3aXzMlr9G1zL3ymoVNlnFY0s'
+        },
+        body: data,
+      })
+
+      const resData = res.json();
+      console.log('Metadata uploaded,CID:', resData.IpfsHash);
+      return resData.IpfsHash;
+    } catch (error) {
+      console.log(error);
+    }
+
+  }
 
   // ---------- Core tx functions ----------
   // const register = async () => {
@@ -169,49 +230,7 @@ export default function ERC721() {
   //   }
   // };
 
-  // ---------- Read helpers ----------
-  const getUser = async () => {
-    if (!contract) return alert("Connect wallet first!");
-    if (!account) return alert("No wallet connected!");
-    try {
-      const user = await contract.getUser(account);
-      setCurrentUser({
-        name: user.name,
-        age: Number(user.age),
-        wallet: user.wallet,
-        balance: user.balance,
-      });
-    } catch (error) {
-      showError(error);
-    }
-  };
-
-  const getAllUsers = async () => {
-    if (!contract) return alert("Connect wallet first!");
-    try {
-      const allUsers = await contract.getAllUsers();
-      const formatted = allUsers.map((u) => ({
-        name: u.name,
-        age: Number(u.age),
-        wallet: u.wallet,
-        balance: u.balance,
-      }));
-      setUsers(formatted);
-    } catch (error) {
-      showError(error);
-    }
-  };
-
-  const fetchContractBalance = async () => {
-    if (!contract) return alert("Connect wallet first!");
-    try {
-      const bal = await contract.contractBalance();
-      console.log(bal);
-      setContractBal(bal);
-    } catch (error) {
-      showError(error);
-    }
-  };
+ 
 
   // ---------- Auto handle accounts/network ----------
   useEffect(() => {
