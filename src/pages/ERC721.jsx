@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
+import axios from "axios";
 import { erc721Address, erc721Abi } from "../constant";
 
 export default function ERC721() {
@@ -14,6 +15,10 @@ export default function ERC721() {
   const [nftName, setNftName] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
+
+
+   // TX hashes
+  const [nftMintedHash, setnftMintedHash] = useState("");
 
   // Inputs
   // const [name, setName] = useState("");
@@ -91,7 +96,7 @@ export default function ERC721() {
           data: formData,
           headers:{
             pinata_api_key: 'febc8bcc2e0247748719',
-            pinata_scret_api_key: '0b23f6b60caf043d5718d773b8c4d877048a5f63966e1c4399e5d2bc733fd0d3',
+            pinata_secret_api_key: '0b23f6b60caf043d5718d773b8c4d877048a5f63966e1c4399e5d2bc733fd0d3',
             'Content-Type': 'multipart/form-data',
           },
 
@@ -99,13 +104,13 @@ export default function ERC721() {
 
         console.log("Image uploaded to Pinata:" ,response.data.IpfsHash);
         const CID = response.data.IpfsHash;
-        // const ImgHash = `https://gateway.pinata.cloud/ipfs/${CID}`;
-        // console.log(ImgHash);
         return CID
 
       } catch (error) {
-        alert("uploadToIpfs failed");
-      }
+  console.log("UPLOAD ERROR:", error.response?.data || error.message);
+  alert("uploadToIpfs failed");
+}
+
     }
   }
 
@@ -119,13 +124,47 @@ export default function ERC721() {
 
 
     const CID = await uploadToIPFS(image);
-    console.log("Image URL : ", CID);
     if(!CID) return alert("image upload failed.");
 
     const metadataCID = await pinJSONToIPFS(nftName,description,CID);
-    const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
+    console.log("Metadata CID : ", CID);
 
+    const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataCID}`;
     console.log("metadata URL: ", metadataUrl);
+
+    // call the contract safeMint function
+
+    try {
+      const tx = await contract.safeMint(metadataUrl);
+      await reciept.wait();
+      alert(`NftMinted successfully Congrates tx : ${reciept.hash}`);
+      setnftMintedHash(reciept.hash);
+      // Extract Event from reciept
+      const event = reciept.logs
+      .map((log) =>{
+        try {
+          return contract.interface.parseLog(log);
+        } catch (error) {
+          
+        }
+      })
+      .find((parsed) => parsed && parsed.name === 'NFTMinted');
+
+      if(event) {
+        const tokenId = event.args.tokenId;
+        console.log('NFT minted with Token ID: ', tokenId);
+        alert(`NFT minted! Token ID: ${tokenId}`);
+      }
+      else{
+        alert('NFTMinted not found in reciept');
+      }
+
+      setNftName("");
+      setDescription("");
+      setImage(null);
+    } catch (error) {
+      showError(error);
+    }
 
    
   };
@@ -136,10 +175,10 @@ export default function ERC721() {
       const data = JSON.stringify({
         nftName,
         description,
-        image: `ipfs://${CID}`,
+        image: `https://gateway.pinata.cloud/ipfs/${CID}`,
       })
 
-      const res = await fetch('https://pinata.cloud/pinning/pinJSONToIPFS',{
+      const res = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS',{
         method: 'POST',
         headers: {
           'Content-type': 'application/json',
@@ -148,12 +187,14 @@ export default function ERC721() {
         body: data,
       })
 
-      const resData = res.json();
-      console.log('Metadata uploaded,CID:', resData.IpfsHash);
+      const resData = await res.json();
+      console.log('Metadata uploaded with image CID:', resData.IpfsHash);
       return resData.IpfsHash;
     } catch (error) {
-      console.log(error);
-    }
+  console.log("UPLOAD ERROR:", error.response?.data || error.message);
+  alert("uploadToIpfs failed");
+}
+
 
   }
 
@@ -540,7 +581,7 @@ export default function ERC721() {
           <div className="lg:col-span-2">
             <div className="max-w-lg mx-auto p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 shadow-xl">
               <h2 className="text-xl font-bold text-indigo-200 mb-4">
-                Mint NFT
+               ERC721 NFT Minter
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -590,7 +631,7 @@ export default function ERC721() {
                   type="submit"
                   className="w-full py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium"
                 >
-                  Submit
+                  MintNFT
                 </button>
               </form>
             </div>
