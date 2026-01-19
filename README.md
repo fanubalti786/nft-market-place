@@ -74,7 +74,7 @@ src/
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/your-username/erc721-nft-marketplace.git
+git clone https://github.com/fanubalti786/erc721-nft-marketplace.git
 cd erc721-nft-marketplace
 ```
 
