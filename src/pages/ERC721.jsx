@@ -108,8 +108,8 @@ export default function ERC721() {
           url: "https://api.pinata.cloud/pinning/pinFileToIPFS",
           data: formData,
           headers: {
-            pinata_api_key: "f2a1537946f7ac7eb5d2",
-            pinata_secret_api_key: "4ca84e4c8535bc94a9f9e1c87711a4925c59a23146ec68cb28746b3656db2d00",
+            pinata_api_key: import.meta.env.VITE_PINATA_API_KEY,
+            pinata_secret_api_key: import.meta.env.VITE_PINATA_SECRET_API_KEY,
           },
         });
 
@@ -198,7 +198,7 @@ export default function ERC721() {
           method: "POST",
           headers: {
             "Content-type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIxZjRkOGQ5OC00YzMwLTRhNmEtYmExNC0zNzcyMTZkZTJhYjAiLCJlbWFpbCI6ImZhbnViYWx0aTc4NkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiZjJhMTUzNzk0NmY3YWM3ZWI1ZDIiLCJzY29wZWRLZXlTZWNyZXQiOiI0Y2E4NGU0Yzg1MzViYzk0YTlmOWUxYzg3NzExYTQ5MjVjNTlhMjMxNDZlYzY4Y2IyODc0NmIzNjU2ZGIyZDAwIiwiZXhwIjoxODAwMjk5OTA3fQ.7c2H9WXAdVrNJcTuflDYmXYQok5F2OazUy7IBi1k8EE`,
+            Authorization: `Bearer ${import.meta.env.VITE_PINATA_JWT}`,
           },
           body: data,
         },
